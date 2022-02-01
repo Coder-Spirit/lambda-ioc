@@ -1,0 +1,7 @@
+#!/bin/sh
+
+yarn clean:deno && \
+yarn build:deno && \
+git add ./lambda-ioc/deno && \
+yarn lint && \
+yarn test
