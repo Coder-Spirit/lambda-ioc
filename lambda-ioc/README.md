@@ -6,6 +6,26 @@
 **[Diddly library](https://github.com/tom-sherman/diddly)**, who deserves most
 credit for this work.
 
+## Install instructions
+
+### Node
+
+```
+# With NPM
+npm install @coderspirit/lambda-ioc
+
+# Or with Yarn:
+yarn add @coderspirit/lambda-ioc
+```
+
+### [Deno](https://deno.land/)
+
+`Lambda-IoC` is served through different CDNs
+```typescript
+import { ... } from 'https://denopkg.com/Coder-Spirit/lambda-ioc@[VERSION]/lambda-ioc/deno/index.ts'
+import { ... } from 'https://deno.land/x/lambda_ioc@[VERSION]/lambda-ioc/deno/index.ts'
+```
+
 ## Benefits
 
 - 100% type safe:
@@ -31,17 +51,17 @@ credit for this work.
 ## Example
 
 ```ts
-import { createContainer } from '@coderspirit/lambda-ioc';
+import { createContainer } from '@coderspirit/lambda-ioc'
 
 function printNameAndAge(name: string, age: number) {
-  console.log(`${name} is aged ${age}`);
+  console.log(`${name} is aged ${age}`)
 }
 ​
 const container = createContainer()
   .register('someAge', value(5))
   .register('someName', value('Timmy'))
-  .register('fn', func(printNameAndAge, 'someName', 'someAge'));
+  .register('fn', func(printNameAndAge, 'someName', 'someAge'))
 ​
-const print = container.resolve('fn');
-print(); // Prints "Timmy is aged 5"
+const print = container.resolve('fn')
+print() // Prints "Timmy is aged 5"
 ```
