@@ -1,4 +1,8 @@
-import { Container, ContainerKey, DependencyFactory } from './container'
+import {
+  ContainerKey,
+  DependencyFactory,
+  ReadableContainer,
+} from './container'
 import { ParamsToResolverKeys, TupleO, Zip } from './util'
 
 /**
@@ -9,8 +13,8 @@ export function singleton<
   TVal,
   TDependencies extends Record<ContainerKey, unknown>,
 >(
-  factory: DependencyFactory<TVal, Container<TDependencies>>,
-): DependencyFactory<TVal, Container<TDependencies>> {
+  factory: DependencyFactory<TVal, ReadableContainer<TDependencies>>,
+): DependencyFactory<TVal, ReadableContainer<TDependencies>> {
   let result: TVal | undefined
 
   return async (container) => {
@@ -82,7 +86,7 @@ export function constructor<
 type FuncContainer<
   TParams extends readonly unknown[],
   TDependencies extends ParamsToResolverKeys<TParams>,
-> = Container<
+> = ReadableContainer<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TupleO<Extract<Zip<TDependencies, TParams>, readonly [ContainerKey, any][]>>
 >
