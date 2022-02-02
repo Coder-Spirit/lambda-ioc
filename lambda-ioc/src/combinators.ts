@@ -2,7 +2,8 @@ import { Container, ContainerKey, DependencyFactory } from './container'
 import { ParamsToResolverKeys, TupleO, Zip } from './util'
 
 /**
- *
+ * Given a dependency factory, returns a new factory that will always resolve
+ * the same instance of the dependency.
  */
 export function singleton<
   TVal,
@@ -20,14 +21,11 @@ export function singleton<
   }
 }
 
-type FuncContainer<
-  TParams extends readonly unknown[],
-  TDependencies extends ParamsToResolverKeys<TParams>,
-> = Container<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TupleO<Extract<Zip<TDependencies, TParams>, readonly [ContainerKey, any][]>>
->
-
+/**
+ * Given a function, and a list of named dependencies, creates a new dependency
+ * factory that will resolve a parameterless function wrapping the original
+ * function and its resolved dependencies.
+ */
 export function func<
   TParams extends readonly unknown[],
   TReturn,
@@ -51,6 +49,10 @@ export function func<
   }
 }
 
+/**
+ * Given a class constructor, and a list of named dependencies, creates a new
+ * dependency factory that will resolve a new instance of the class.
+ */
 export function constructor<
   TParams extends readonly unknown[],
   TClass,
@@ -73,3 +75,14 @@ export function constructor<
     return new constructor(...resolvedArgs)
   }
 }
+
+// -----------------------------------------------------------------------------
+// Private Types
+// -----------------------------------------------------------------------------
+type FuncContainer<
+  TParams extends readonly unknown[],
+  TDependencies extends ParamsToResolverKeys<TParams>,
+> = Container<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  TupleO<Extract<Zip<TDependencies, TParams>, readonly [ContainerKey, any][]>>
+>
