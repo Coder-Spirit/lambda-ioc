@@ -65,10 +65,12 @@ function printNameAndAge(name: string, age: number) {
 }
 ​
 const container = createContainer()
-  .register('someAge', value(5))
-  .register('someName', value('Timmy'))
+  .registerValue('someAge', 5)
+  .registerValue('someName', 'Timmy')
   .register('fn', func(printNameAndAge, 'someName', 'someAge'))
 ​
-const print = container.resolve('fn')
+// For now it's always async, we'll improve its API to decide when to expose
+// the registered dependencies synchronously or asynchronoyusly in a smart way.
+const print = await container.resolve('fn')
 print() // Prints "Timmy is aged 5"
 ```
