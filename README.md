@@ -58,19 +58,51 @@ import { ... } from 'https://deno.land/x/lambda_ioc@[VERSION]/lambda-ioc/deno/in
 ## Example
 
 ```ts
-import { createContainer } from '@coderspirit/lambda-ioc'
+import {
+  constructor,
+  createContainer,
+  func
+} from '@coderspirit/lambda-ioc'
 
 function printNameAndAge(name: string, age: number) {
   console.log(`${name} is aged ${age}`)
+}
+
+class Person {
+  constructor(
+    public readonly age: number,
+    public readonly name: string
+  ) {}
 }
 ​
 const container = createContainer()
   .registerValue('someAge', 5)
   .registerValue('someName', 'Timmy')
+  // We can register functions
   .register('fn', func(printNameAndAge, 'someName', 'someAge'))
+  // And constructors too
+  .register('Person', constructor(Person, 'someAge', 'someName'))
 ​
-// For now it's always async, we'll improve its API to decide when to expose
-// the registered dependencies synchronously or asynchronoyusly in a smart way.
-const print = await container.resolve('fn')
+const print = container.resolve('fn')
 print() // Prints "Timmy is aged 5"
+
+const person = container.resolve('Person')
+console.print(person.age) // Prints "5"
+console.print(person.name) // Prints "Timmy"
 ```
+
+It is also possible to register and resolve asynchronous factories and
+dependencies. They are not documented yet because some "helpers" are missing,
+and therefore it's a bit more annoying to take advantage of that feature.
+
+If you are curious, just try out:
+- `registerAsync`
+- `resolveAsync`
+
+## Differences respect to Diddly
+
+- First-class support for Deno.
+- First-class support for asynchronous dependency resolution.
+- The container interface has been split into `ReaderContainer` and
+  `WriterContainer`, making it easier to use precise types.
+- More extense documentation.
