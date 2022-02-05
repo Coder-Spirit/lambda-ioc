@@ -1,7 +1,7 @@
 import {
   ContainerKey,
-  DependencyFactory,
   ReadableContainer,
+  SyncDependencyFactory,
 } from './container.ts';
 import { ParamsToResolverKeys, TupleO, Zip } from './util.ts';
 
@@ -13,13 +13,15 @@ export function singleton<
   TVal,
   TDependencies extends Record<ContainerKey, unknown>,
 >(
-  factory: DependencyFactory<TVal, ReadableContainer<TDependencies>>,
-): DependencyFactory<TVal, ReadableContainer<TDependencies>> {
-  let result: TVal | undefined
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  factory: SyncDependencyFactory<TVal, ReadableContainer<TDependencies, {}>>,
+  // eslint-disable-next-line @typescript-eslint/ban-types
+): SyncDependencyFactory<TVal, ReadableContainer<TDependencies, {}>> {
+  let result: Awaited<TVal> | undefined
 
-  return async (container) => {
+  return (container) => {
     if (!result) {
-      result = await factory(container)
+      result = factory(container)
     }
     return result
   }
@@ -37,17 +39,19 @@ export function func<
 >(
   fn: (...args: TParams) => Awaited<TReturn>,
   ...args: TDependencies
-): DependencyFactory<() => TReturn, FuncContainer<TParams, TDependencies>> {
-  return async (container: FuncContainer<TParams, TDependencies>) => {
-    const argPromises = args.map((arg) =>
+): SyncDependencyFactory<
+  () => TReturn,
+  SyncFuncContainer<TParams, TDependencies>
+> {
+  return (container: SyncFuncContainer<TParams, TDependencies>) => {
+    const resolvedArgs = args.map((arg) =>
       container.resolve(
         // This is ugly as hell, but I did not want to apply ts-ignore
-        arg as Parameters<FuncContainer<TParams, TDependencies>['resolve']>[0],
+        arg as Parameters<
+          SyncFuncContainer<TParams, TDependencies>['resolve']
+        >[0],
       ),
-    )
-    const resolvedArgs = (await Promise.all(
-      argPromises as Promise<unknown>[],
-    )) as unknown as TParams
+    ) as unknown as TParams
 
     return () => fn(...resolvedArgs)
   }
@@ -62,19 +66,18 @@ export function constructor<
   TClass,
   TDependencies extends ParamsToResolverKeys<TParams>,
 >(
-  constructor: new (...args: TParams) => TClass,
+  constructor: new (...args: TParams) => Awaited<TClass>,
   ...args: TDependencies
-): DependencyFactory<TClass, FuncContainer<TParams, TDependencies>> {
-  return async (container: FuncContainer<TParams, TDependencies>) => {
-    const argPromises = args.map((arg) =>
+): SyncDependencyFactory<TClass, SyncFuncContainer<TParams, TDependencies>> {
+  return (container: SyncFuncContainer<TParams, TDependencies>) => {
+    const resolvedArgs = args.map((arg) =>
       container.resolve(
         // This is ugly as hell, but I did not want to apply ts-ignore
-        arg as Parameters<FuncContainer<TParams, TDependencies>['resolve']>[0],
+        arg as Parameters<
+          SyncFuncContainer<TParams, TDependencies>['resolve']
+        >[0],
       ),
-    )
-    const resolvedArgs = (await Promise.all(
-      argPromises as Promise<unknown>[],
-    )) as unknown as TParams
+    ) as unknown as TParams
 
     return new constructor(...resolvedArgs)
   }
@@ -83,10 +86,14 @@ export function constructor<
 // -----------------------------------------------------------------------------
 // Private Types
 // -----------------------------------------------------------------------------
-type FuncContainer<
+type SyncFuncContainer<
   TParams extends readonly unknown[],
-  TDependencies extends ParamsToResolverKeys<TParams>,
+  TSyncDependencies extends ParamsToResolverKeys<TParams>,
 > = ReadableContainer<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TupleO<Extract<Zip<TDependencies, TParams>, readonly [ContainerKey, any][]>>
+  TupleO<
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Extract<Zip<TSyncDependencies, TParams>, readonly [ContainerKey, any][]>
+  >,
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  {}
 >
