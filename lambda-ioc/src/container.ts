@@ -77,7 +77,14 @@ export interface WritableContainer<
    * @param name The "name" of the dependency (can be a symbol).
    * @param dependency A dependency factory.
    */
-  register<TName extends ContainerKey, TDependency>(
+  register<
+    TName extends ContainerKey,
+    TDependency extends TName extends keyof TSyncDependencies
+      ? TSyncDependencies[TName]
+      : TName extends keyof TAsyncDependencies
+      ? never
+      : unknown,
+  >(
     name: TName,
     dependency: SyncDependencyFactory<
       TDependency,
@@ -102,7 +109,14 @@ export interface WritableContainer<
    * @param name The "name" of the dependency (can be a symbol).
    * @param dependency A dependency factory.
    */
-  registerAsync<TName extends ContainerKey, TDependency>(
+  registerAsync<
+    TName extends ContainerKey,
+    TDependency extends TName extends keyof TSyncDependencies
+      ? never
+      : TName extends keyof TAsyncDependencies
+      ? TAsyncDependencies[TName]
+      : unknown,
+  >(
     name: TName,
     dependency: AsyncDependencyFactory<
       TDependency,
