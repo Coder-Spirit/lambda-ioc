@@ -141,7 +141,14 @@ export interface WritableContainer<
    * @param name The "name" of the dependency (can be a symbol).
    * @param dependency An already instantiated value.
    */
-  registerValue<TName extends ContainerKey, TDependency>(
+  registerValue<
+    TName extends ContainerKey,
+    TDependency extends TName extends keyof TSyncDependencies
+      ? TSyncDependencies[TName]
+      : TName extends keyof TAsyncDependencies
+      ? never
+      : unknown,
+  >(
     name: TName,
     dependency: TDependency,
   ): Container<
@@ -280,13 +287,21 @@ function __createContainer<
         Container<TSyncDependencies, {}>
       >,
     ): ContainerWithNewSyncDep<TName, TDependency> {
-      return __createContainer(
-        {
-          ...syncDependencies,
-          [name]: dependency,
-        },
-        asyncDependencies,
-      ) as ContainerWithNewSyncDep<TName, TDependency>
+      if (name in syncDependencies) {
+        return __createContainer(
+          {
+            ...syncDependencies,
+            [name]: dependency,
+          },
+          asyncDependencies,
+        ) as ContainerWithNewSyncDep<TName, TDependency>
+      } else {
+        ;(syncDependencies as Record<TName, unknown>)[name] = dependency
+        return __createContainer(
+          syncDependencies,
+          asyncDependencies,
+        ) as ContainerWithNewSyncDep<TName, TDependency>
+      }
     },
 
     registerAsync<TName extends ContainerKey, TDependency>(
@@ -296,23 +311,39 @@ function __createContainer<
         Container<TSyncDependencies, TAsyncDependencies>
       >,
     ): ContainerWithNewAsyncDep<TName, TDependency> {
-      return __createContainer(syncDependencies, {
-        ...asyncDependencies,
-        [name]: dependency,
-      }) as ContainerWithNewAsyncDep<TName, TDependency>
+      if (name in asyncDependencies) {
+        return __createContainer(syncDependencies, {
+          ...asyncDependencies,
+          [name]: dependency,
+        }) as ContainerWithNewAsyncDep<TName, TDependency>
+      } else {
+        ;(asyncDependencies as Record<TName, unknown>)[name] = dependency
+        return __createContainer(
+          syncDependencies,
+          asyncDependencies,
+        ) as ContainerWithNewAsyncDep<TName, TDependency>
+      }
     },
 
     registerValue<TName extends ContainerKey, TDependency>(
       name: TName,
       dependency: TDependency,
     ): ContainerWithNewSyncDep<TName, TDependency> {
-      return __createContainer(
-        {
-          ...syncDependencies,
-          [name]: () => dependency,
-        },
-        asyncDependencies,
-      ) as ContainerWithNewSyncDep<TName, TDependency>
+      if (name in syncDependencies) {
+        return __createContainer(
+          {
+            ...syncDependencies,
+            [name]: () => dependency,
+          },
+          asyncDependencies,
+        ) as ContainerWithNewSyncDep<TName, TDependency>
+      } else {
+        ;(syncDependencies as Record<TName, unknown>)[name] = () => dependency
+        return __createContainer(
+          syncDependencies,
+          asyncDependencies,
+        ) as ContainerWithNewSyncDep<TName, TDependency>
+      }
     },
 
     resolve<TName extends keyof TSyncDependencies>(

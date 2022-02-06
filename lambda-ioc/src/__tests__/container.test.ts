@@ -55,12 +55,15 @@ describe('container', () => {
         async (c) => c.resolve('a') * (await c.resolveAsync('c')),
       )
     const c2 = c1.register('a', () => 7)
+    const c3 = c2.registerValue('a', 13)
 
     expect(c1.resolve('ab')).toBe(15)
     expect(c2.resolve('ab')).toBe(35)
+    expect(c3.resolve('ab')).toBe(65)
 
     expect(await c1.resolveAsync('ac')).toBe(33)
     expect(await c2.resolveAsync('ac')).toBe(77)
+    expect(await c3.resolveAsync('ac')).toBe(143)
   })
 
   it('can re-register async dependencies (without changing the "original" container)', async () => {

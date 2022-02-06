@@ -141,7 +141,14 @@ export interface WritableContainer<
    * @param name The "name" of the dependency (can be a symbol).
    * @param dependency An already instantiated value.
    */
-  registerValue<TName extends ContainerKey, TDependency>(
+  registerValue<
+    TName extends ContainerKey,
+    TDependency extends TName extends keyof TSyncDependencies
+      ? TSyncDependencies[TName]
+      : TName extends keyof TAsyncDependencies
+      ? never
+      : unknown,
+  >(
     name: TName,
     dependency: TDependency,
   ): Container<
