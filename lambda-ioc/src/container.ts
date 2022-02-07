@@ -2,10 +2,14 @@
 
 export type ContainerKey = string | symbol
 
-/**
- * Represents a dependency factory: a function that, given an IoC container, it
- * is able to instantiate a specific dependency.
- */
+type ExtractPrefix<S extends ContainerKey> =
+  S extends `${infer Prefix}:${string}` ? Prefix : never
+
+type ExtractPrefixedValues<
+  Prefix extends string,
+  Struct extends Record<ContainerKey, unknown>,
+  BaseKeys extends keyof Struct = keyof Struct,
+> = BaseKeys extends `${Prefix}:${infer U}` ? Struct[`${Prefix}:${U}`] : never
 
 export interface SyncDependencyFactory<
   T,
@@ -21,12 +25,13 @@ export interface AsyncDependencyFactory<
     Record<ContainerKey, unknown>
   >,
 > {
-  // It might seem counterintuitive that we allow T as return type, but the
-  // factory might also "become async" because of its dependencies, not just
-  // because of its return type.
   (container: TContainer): Promise<T>
 }
 
+/**
+ * Represents a dependency factory: a function that, given an IoC container, it
+ * is able to instantiate a specific dependency.
+ */
 export interface DependencyFactory<
   T,
   TContainer extends ReadableContainer<
@@ -61,6 +66,20 @@ export interface ReadableContainer<
   resolveAsync<TName extends keyof TAsyncDependencies>(
     name: TName,
   ): Promise<TAsyncDependencies[TName]>
+}
+
+export interface RedableGroupContainer<
+  TSyncDependencies extends Record<ContainerKey, unknown>,
+> {
+  resolveGroup<
+    GroupName extends keyof TSyncDependencies extends ContainerKey
+      ? ExtractPrefix<keyof TSyncDependencies>
+      : never,
+  >(
+    groupName: GroupName,
+  ): (keyof TSyncDependencies extends ContainerKey
+    ? ExtractPrefixedValues<GroupName, TSyncDependencies>
+    : never)[]
 }
 
 /**
@@ -173,6 +192,7 @@ export interface Container<
   TSyncDependencies extends Record<ContainerKey, unknown>,
   TAsyncDependencies extends Record<ContainerKey, unknown>,
 > extends ReadableContainer<TSyncDependencies, TAsyncDependencies>,
+    RedableGroupContainer<TSyncDependencies>,
     WritableContainer<TSyncDependencies, TAsyncDependencies> {}
 
 /**
@@ -364,6 +384,25 @@ function __createContainer<
           name as keyof TAsyncDependencyFactories
         ] as AsyncDependencyFactory<TAsyncDependencies[TName], typeof this>
       )(this)
+    },
+
+    resolveGroup<GroupName extends string>(
+      groupName: GroupName,
+    ): (keyof TSyncDependencies extends ContainerKey
+      ? ExtractPrefixedValues<GroupName, TSyncDependencies>
+      : never)[] {
+      return (
+        Object.entries(syncDependencies)
+          .filter(([key]) => {
+            return key.startsWith(`${groupName}:`)
+          })
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          .map(([_key, value]) => {
+            return value(this)
+          }) as (keyof TSyncDependencies extends ContainerKey
+          ? ExtractPrefixedValues<GroupName, TSyncDependencies>
+          : never)[]
+      )
     },
   }
 }
