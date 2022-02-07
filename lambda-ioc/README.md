@@ -58,17 +58,67 @@ import { ... } from 'https://deno.land/x/lambda_ioc@[VERSION]/lambda-ioc/deno/in
 ## Example
 
 ```ts
-import { createContainer } from '@coderspirit/lambda-ioc'
+import {
+  constructor,
+  createContainer,
+  func
+} from '@coderspirit/lambda-ioc'
 
 function printNameAndAge(name: string, age: number) {
   console.log(`${name} is aged ${age}`)
 }
+
+class Person {
+  constructor(
+    public readonly age: number,
+    public readonly name: string
+  ) {}
+}
 ​
 const container = createContainer()
-  .register('someAge', value(5))
-  .register('someName', value('Timmy'))
+  .registerValue('someAge', 5)
+  .registerValue('someName', 'Timmy')
+  // We can register functions
   .register('fn', func(printNameAndAge, 'someName', 'someAge'))
+  // And constructors too
+  .register('Person', constructor(Person, 'someAge', 'someName'))
+  // We can "define groups" by using `:` as an infix, the group's name will be
+  // the first part of the string before `:`.
+  // Groups can be used in all "register" methods.
+  .registerValue('group1:a', 1) // group == 'group1'
+  .registerValue('group1:b', 2)
+  .registerValue('group2:a', 3) // group == 'group2'
+  .registerValue('group2:b', 4)
 ​
+// We can resolve registered functions
 const print = container.resolve('fn')
 print() // Prints "Timmy is aged 5"
+
+// We can resolve registered constructors
+const person = container.resolve('Person')
+console.print(person.age) // Prints "5"
+console.print(person.name) // Prints "Timmy"
+
+// We can resolve registered "groups"
+container.resolveGroup('group1') // ~ [1, 2], not necessarily in the same order
+container.resolveGroup('group2') // ~ [3, 4], not necessarily in the same order
 ```
+
+It is also possible to register and resolve asynchronous factories and
+dependencies. They are not documented yet because some "helpers" are missing,
+and therefore it's a bit more annoying to take advantage of that feature.
+
+If you are curious, just try out:
+- `registerAsync`
+- `resolveAsync`
+
+## Differences respect to Diddly
+
+- First-class support for Deno.
+- First-class support for asynchronous dependency resolution.
+- Stricter types for dependencies re-registration.
+- Groups registration and resolution: very useful when we need to resolve all
+  dependencies belonging to a same category.
+- The container interface has been split into `ReaderContainer` and
+  `WriterContainer`, making it easier to use precise types.
+- More extense documentation.
