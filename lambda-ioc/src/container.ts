@@ -70,6 +70,7 @@ export interface ReadableContainer<
 
 export interface RedableGroupContainer<
   TSyncDependencies extends Record<ContainerKey, unknown>,
+  TAsyncDependencies extends Record<ContainerKey, unknown>,
 > {
   resolveGroup<
     GroupName extends keyof TSyncDependencies extends ContainerKey
@@ -77,9 +78,21 @@ export interface RedableGroupContainer<
       : never,
   >(
     groupName: GroupName,
-  ): (keyof TSyncDependencies extends ContainerKey
-    ? ExtractPrefixedValues<GroupName, TSyncDependencies>
-    : never)[]
+  ): keyof TSyncDependencies extends ContainerKey
+    ? ExtractPrefixedValues<GroupName, TSyncDependencies>[]
+    : never
+
+  resolveGroupAsync<
+    GroupName extends keyof TAsyncDependencies extends ContainerKey
+      ? ExtractPrefix<keyof TAsyncDependencies>
+      : never,
+  >(
+    groupName: GroupName,
+  ): Promise<
+    keyof TAsyncDependencies extends ContainerKey
+      ? ExtractPrefixedValues<GroupName, TAsyncDependencies>[]
+      : never
+  >
 }
 
 /**
@@ -192,7 +205,7 @@ export interface Container<
   TSyncDependencies extends Record<ContainerKey, unknown>,
   TAsyncDependencies extends Record<ContainerKey, unknown>,
 > extends ReadableContainer<TSyncDependencies, TAsyncDependencies>,
-    RedableGroupContainer<TSyncDependencies>,
+    RedableGroupContainer<TSyncDependencies, TAsyncDependencies>,
     WritableContainer<TSyncDependencies, TAsyncDependencies> {}
 
 /**
@@ -388,9 +401,9 @@ function __createContainer<
 
     resolveGroup<GroupName extends string>(
       groupName: GroupName,
-    ): (keyof TSyncDependencies extends ContainerKey
-      ? ExtractPrefixedValues<GroupName, TSyncDependencies>
-      : never)[] {
+    ): keyof TSyncDependencies extends ContainerKey
+      ? ExtractPrefixedValues<GroupName, TSyncDependencies>[]
+      : never {
       return (
         Object.entries(syncDependencies)
           .filter(([key]) => {
@@ -399,10 +412,31 @@ function __createContainer<
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           .map(([_key, value]) => {
             return value(this)
-          }) as (keyof TSyncDependencies extends ContainerKey
-          ? ExtractPrefixedValues<GroupName, TSyncDependencies>
-          : never)[]
+          }) as keyof TSyncDependencies extends ContainerKey
+          ? ExtractPrefixedValues<GroupName, TSyncDependencies>[]
+          : never
       )
+    },
+
+    async resolveGroupAsync<GroupName extends string>(
+      groupName: GroupName,
+    ): Promise<
+      keyof TAsyncDependencies extends ContainerKey
+        ? ExtractPrefixedValues<GroupName, TAsyncDependencies>[]
+        : never
+    > {
+      return (await Promise.all(
+        Object.entries(asyncDependencies)
+          .filter(([key]) => {
+            return key.startsWith(`${groupName}:`)
+          })
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          .map(([_key, value]) => {
+            return value(this)
+          }),
+      )) as keyof TAsyncDependencies extends ContainerKey
+        ? ExtractPrefixedValues<GroupName, TAsyncDependencies>[]
+        : never
     },
   }
 }

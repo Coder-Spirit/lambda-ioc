@@ -99,6 +99,26 @@ describe('container', () => {
     expect(g2).toContain(50)
     expect(g2).toContain(60)
   })
+
+  it('can register asynchronous groups by relying on prefixes', async () => {
+    const container = createContainer()
+      .register('a', () => 10)
+      .register('b', () => 20)
+      .registerAsync('g1:a', () => Promise.resolve(30))
+      .registerAsync('g1:b', () => Promise.resolve(40))
+      .registerAsync('g2:a', () => Promise.resolve(50))
+      .registerAsync('g2:b', () => Promise.resolve(60))
+
+    const g1 = await container.resolveGroupAsync('g1')
+    expect(g1).toHaveLength(2)
+    expect(g1).toContain(30)
+    expect(g1).toContain(40)
+
+    const g2 = await container.resolveGroupAsync('g2')
+    expect(g2).toHaveLength(2)
+    expect(g2).toContain(50)
+    expect(g2).toContain(60)
+  })
 })
 
 // Type tests
@@ -230,12 +250,53 @@ describe('@types/container', () => {
     >
 
     type C_resolveGroup_Parameters = Parameters<C['resolveGroup']>
-    type C_resolve_Parameters_is_g1g2 = C_resolveGroup_Parameters extends [
+    type C_resolveGroup_Parameters_extends_g1g2 =
+      C_resolveGroup_Parameters extends ['g1' | 'g2'] ? true : false
+    type g1g2_extends_C_resolveGroup_Parameters = [
       'g1' | 'g2',
-    ]
+    ] extends C_resolveGroup_Parameters
       ? true
       : false
-    const c_can_only_resolveGroup_g1g2: C_resolve_Parameters_is_g1g2 = true
+    type C_resolveGroup_Parameters_is_g1g2 =
+      C_resolveGroup_Parameters_extends_g1g2 extends true
+        ? g1g2_extends_C_resolveGroup_Parameters extends true
+          ? true
+          : false
+        : false
+    const c_can_only_resolveGroup_g1g2: C_resolveGroup_Parameters_is_g1g2 = true
     expect(c_can_only_resolveGroup_g1g2).toBe(true)
+  })
+
+  it('only resolves the async registered groups', () => {
+    type C = Container<
+      {
+        a: number
+        b: number
+      },
+      {
+        'g1:a': number
+        'g1:b': string
+        'g2:a': string
+        'g2:b': boolean
+      }
+    >
+
+    type C_resolveGroupAsync_Parameters = Parameters<C['resolveGroupAsync']>
+    type C_resolveGroupAsync_Parameters_extends_g1g2 =
+      C_resolveGroupAsync_Parameters extends ['g1' | 'g2'] ? true : false
+    type g1g2_extends_C_resolveGroupAsync_Parameters = [
+      'g1' | 'g2',
+    ] extends C_resolveGroupAsync_Parameters
+      ? true
+      : false
+    type C_resolveGroupAsync_Parameters_is_g1g2 =
+      C_resolveGroupAsync_Parameters_extends_g1g2 extends true
+        ? g1g2_extends_C_resolveGroupAsync_Parameters extends true
+          ? true
+          : false
+        : false
+    const c_can_only_resolveGroupAsync_g1g2: C_resolveGroupAsync_Parameters_is_g1g2 =
+      true
+    expect(c_can_only_resolveGroupAsync_g1g2).toBe(true)
   })
 })
