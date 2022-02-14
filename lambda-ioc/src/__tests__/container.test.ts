@@ -214,6 +214,26 @@ describe('@types/container', () => {
     expect(c_cannot_resolveAsync_anything).toBe(true)
   })
 
+  it('assigns the correct type to sync resolved values', () => {
+    type C = Container<{ a: number }, {}>
+
+    // Checking the type for the resolved value
+    type C_resolve_ReturnType = ReturnType<C['resolve']>
+    type C_resolve_ReturnType_extends_number =
+      C_resolve_ReturnType extends number ? true : false
+    type C_number_extends_resolve_ReturnType =
+      number extends C_resolve_ReturnType ? true : false
+    type C_resolve_ReturnType_is_number =
+      C_resolve_ReturnType_extends_number extends true
+        ? C_number_extends_resolve_ReturnType extends true
+          ? true
+          : false
+        : false
+
+    const c_resolves_number: C_resolve_ReturnType_is_number = true
+    expect(c_resolves_number).toBe(true)
+  })
+
   it('only resolves the async registered dependency', () => {
     type C = Container<{}, { b: number }>
 
@@ -234,6 +254,26 @@ describe('@types/container', () => {
       : false
     const c_can_only_resolve_b: C_resolveAsync_Parameters_is_b = true
     expect(c_can_only_resolve_b).toBe(true)
+  })
+
+  it('assigns the correct type to async resolved values', () => {
+    type C = Container<{}, { a: number }>
+
+    // Checking the type for the resolved value
+    type C_resolveAsync_ReturnType = ReturnType<C['resolveAsync']>
+    type C_resolveAsync_ReturnType_extends_number =
+      C_resolveAsync_ReturnType extends Promise<number> ? true : false
+    type C_number_extends_resolve_ReturnType =
+      Promise<number> extends C_resolveAsync_ReturnType ? true : false
+    type C_resolveAsync_ReturnType_is_number =
+      C_resolveAsync_ReturnType_extends_number extends true
+        ? C_number_extends_resolve_ReturnType extends true
+          ? true
+          : false
+        : false
+
+    const c_resolvesAsync_number: C_resolveAsync_ReturnType_is_number = true
+    expect(c_resolvesAsync_number).toBe(true)
   })
 
   it('only resolves the sync registered groups', () => {
