@@ -13,7 +13,7 @@ type ExtractPrefixedValues<
 
 export interface SyncDependencyFactory<
   T,
-  TContainer extends ReadableContainer<Record<ContainerKey, unknown>, {}>,
+  TContainer extends ReadableSyncContainer<Record<ContainerKey, unknown>>,
 > {
   (container: TContainer): Awaited<T>
 }
@@ -41,13 +41,8 @@ export interface DependencyFactory<
 > extends SyncDependencyFactory<T, TContainer>,
     AsyncDependencyFactory<T, TContainer> {}
 
-/**
- * Represents a read-only version of a type-safe IoC container with "auto-wired"
- * dependencies resolution.
- */
-export interface ReadableContainer<
+export interface ReadableSyncContainer<
   TSyncDependencies extends Record<ContainerKey, unknown>,
-  TAsyncDependencies extends Record<ContainerKey, unknown>,
 > {
   /**
    * Resolve a "synchronous" dependency from the container.
@@ -57,7 +52,11 @@ export interface ReadableContainer<
   resolve<TName extends keyof TSyncDependencies>(
     name: TName,
   ): TSyncDependencies[TName]
+}
 
+export interface ReadableAsyncContainer<
+  TAsyncDependencies extends Record<ContainerKey, unknown>,
+> {
   /**
    * Resolve an "asynchronous" dependency from the container.
    *
@@ -67,6 +66,16 @@ export interface ReadableContainer<
     name: TName,
   ): Promise<TAsyncDependencies[TName]>
 }
+
+/**
+ * Represents a read-only version of a type-safe IoC container with "auto-wired"
+ * dependencies resolution.
+ */
+export interface ReadableContainer<
+  TSyncDependencies extends Record<ContainerKey, unknown>,
+  TAsyncDependencies extends Record<ContainerKey, unknown>,
+> extends ReadableSyncContainer<TSyncDependencies>,
+    ReadableAsyncContainer<TAsyncDependencies> {}
 
 export interface RedableGroupContainer<
   TSyncDependencies extends Record<ContainerKey, unknown>,
@@ -120,7 +129,7 @@ export interface WritableContainer<
     name: TName,
     dependency: SyncDependencyFactory<
       TDependency,
-      ReadableContainer<TSyncDependencies, {}>
+      ReadableSyncContainer<TSyncDependencies>
     >,
   ): Container<
     {

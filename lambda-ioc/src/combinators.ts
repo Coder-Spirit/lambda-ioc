@@ -1,6 +1,8 @@
 import {
+  AsyncDependencyFactory,
   ContainerKey,
   ReadableContainer,
+  ReadableSyncContainer,
   SyncDependencyFactory,
 } from './container'
 import { ParamsToResolverKeys, TupleO, Zip } from './util'
@@ -11,17 +13,45 @@ import { ParamsToResolverKeys, TupleO, Zip } from './util'
  */
 export function singleton<
   TVal,
-  TDependencies extends Record<ContainerKey, unknown>,
+  TSyncDependencies extends Record<ContainerKey, unknown>,
 >(
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  factory: SyncDependencyFactory<TVal, ReadableContainer<TDependencies, {}>>,
-  // eslint-disable-next-line @typescript-eslint/ban-types
-): SyncDependencyFactory<TVal, ReadableContainer<TDependencies, {}>> {
+  factory: SyncDependencyFactory<
+    TVal,
+    ReadableSyncContainer<TSyncDependencies>
+  >,
+): SyncDependencyFactory<TVal, ReadableSyncContainer<TSyncDependencies>> {
   let result: Awaited<TVal> | undefined
 
   return (container) => {
     if (!result) {
       result = factory(container)
+    }
+    return result
+  }
+}
+
+/**
+ * Given a dependency factory, returns a new asynchronous factory that will
+ * always resolve the same instance of the dependency.
+ */
+export function asyncSingleton<
+  TVal,
+  TSyncDependencies extends Record<ContainerKey, unknown>,
+  TAsyncDependencies extends Record<ContainerKey, unknown>,
+>(
+  factory: AsyncDependencyFactory<
+    TVal,
+    ReadableContainer<TSyncDependencies, TAsyncDependencies>
+  >,
+): AsyncDependencyFactory<
+  TVal,
+  ReadableContainer<TSyncDependencies, TAsyncDependencies>
+> {
+  let result: TVal | undefined
+
+  return async (container) => {
+    if (!result) {
+      result = await factory(container)
     }
     return result
   }
@@ -35,20 +65,20 @@ export function singleton<
 export function func<
   TParams extends readonly unknown[],
   TReturn,
-  TDependencies extends ParamsToResolverKeys<TParams>,
+  TSyncDependencies extends ParamsToResolverKeys<TParams>,
 >(
   fn: (...args: TParams) => Awaited<TReturn>,
-  ...args: TDependencies
+  ...args: TSyncDependencies
 ): SyncDependencyFactory<
   () => TReturn,
-  SyncFuncContainer<TParams, TDependencies>
+  SyncFuncContainer<TParams, TSyncDependencies>
 > {
-  return (container: SyncFuncContainer<TParams, TDependencies>) => {
+  return (container: SyncFuncContainer<TParams, TSyncDependencies>) => {
     const resolvedArgs = args.map((arg) =>
       container.resolve(
         // This is ugly as hell, but I did not want to apply ts-ignore
         arg as Parameters<
-          SyncFuncContainer<TParams, TDependencies>['resolve']
+          SyncFuncContainer<TParams, TSyncDependencies>['resolve']
         >[0],
       ),
     ) as unknown as TParams
@@ -89,11 +119,9 @@ export function constructor<
 type SyncFuncContainer<
   TParams extends readonly unknown[],
   TSyncDependencies extends ParamsToResolverKeys<TParams>,
-> = ReadableContainer<
+> = ReadableSyncContainer<
   TupleO<
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Extract<Zip<TSyncDependencies, TParams>, readonly [ContainerKey, any][]>
-  >,
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  {}
+  >
 >
