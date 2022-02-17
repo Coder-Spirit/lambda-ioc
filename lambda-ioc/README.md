@@ -33,28 +33,6 @@ import { ... } from 'https://denopkg.com/Coder-Spirit/lambda-ioc@[VERSION]/lambd
 import { ... } from 'https://deno.land/x/lambda_ioc@[VERSION]/lambda-ioc/deno/index.ts'
 ```
 
-## Benefits
-
-- 100% type safe:
-  - The type checker will complain if we try to resolve unregistered
-    dependencies.
-  - The type checker will complain if we try to register new dependencies that
-    depend on unregistered dependencies, or if there is any kind of type
-    mismatch.
-- Purely functional
-- Immutable
-- Circular dependencies are impossible
-
-## Drawbacks
-
-- All dependencies must be declared "in order".
-  - This implies that this IoC container cannot be used in combination with some
-    auto-wiring solutions, such as IoC decorators.
-- The involved types are a bit convoluted:
-  - They might cause the type checker to be slow.
-  - In some situations, the type checker might be unable to infer the involved
-    types due to excessive "nested types" depth.
-
 ## Example
 
 ```ts
@@ -105,12 +83,32 @@ container.resolveGroup('group2') // ~ [3, 4], not necessarily in the same order
 ```
 
 It is also possible to register and resolve asynchronous factories and
-dependencies. They are not documented yet because some "helpers" are missing,
-and therefore it's a bit more annoying to take advantage of that feature.
-
-If you are curious, just try out:
+dependencies. If you are curious, just try out:
 - `registerAsync`
+- `registerAsyncConstructor`
 - `resolveAsync`
+
+## Benefits
+
+- 100% type safe:
+  - The type checker will complain if we try to resolve unregistered
+    dependencies.
+  - The type checker will complain if we try to register new dependencies that
+    depend on unregistered dependencies, or if there is any kind of type
+    mismatch.
+- Purely functional
+- Immutable
+- Circular dependencies are impossible
+
+## Drawbacks
+
+- All dependencies must be declared "in order".
+  - This implies that this IoC container cannot be used in combination with some
+    auto-wiring solutions, such as IoC decorators.
+- The involved types are a bit convoluted:
+  - They might cause the type checker to be slow.
+  - In some situations, the type checker might be unable to infer the involved
+    types due to excessive "nested types" depth.
 
 ## Differences respect to Diddly
 
