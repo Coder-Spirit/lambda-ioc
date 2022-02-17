@@ -1,11 +1,10 @@
 import {
   AsyncDependencyFactory,
-  ContainerKey,
   ReadableContainer,
   ReadableSyncContainer,
   SyncDependencyFactory,
 } from './container'
-import { ParamsToResolverKeys, TupleO, Zip } from './util'
+import { ContainerKey, ParamsToResolverKeys, TupleO, Zip } from './util'
 
 /**
  * Given a dependency factory, returns a new factory that will always resolve

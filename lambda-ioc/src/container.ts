@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
-export type ContainerKey = string | symbol
+import { ContainerKey, ContextualParamsToResolverKeys } from './util'
 
 type ExtractPrefix<S extends ContainerKey> =
   S extends `${infer Prefix}:${string}` ? Prefix : never
@@ -173,6 +173,51 @@ export interface WritableContainer<
           ? TDependency
           : TAsyncDependencies[TK]
         : TDependency
+    }
+  >
+
+  /**
+   * Registers a new constructor that might have asynchronous-resolvable
+   * dependencies. This method is helpful when the constructor combinator is
+   * not powerful enough (as it's only able to resolve synchronously).
+   *
+   * @param name The "name" of the dependency (can be a symbol).
+   * @param constructor A class constructor, that will be use to resolve the
+   *                    registered dependency.
+   * @param args A list of dependency names that will be passed to the
+   *             registered constructor at construction time, when we try to
+   *             resolve the dependency.
+   */
+  registerAsyncConstructor<
+    TName extends ContainerKey,
+    TParams extends readonly (
+      | TSyncDependencies[keyof TSyncDependencies]
+      | TAsyncDependencies[keyof TAsyncDependencies]
+    )[],
+    TClass extends TName extends keyof TSyncDependencies
+      ? never
+      : TName extends keyof TAsyncDependencies
+      ? TAsyncDependencies[TName]
+      : unknown,
+    TDependencies extends ContextualParamsToResolverKeys<
+      TSyncDependencies,
+      TAsyncDependencies,
+      TParams
+    >,
+  >(
+    name: TName,
+    constructor: new (...args: TParams) => TClass,
+    ...args: TDependencies
+  ): Container<
+    TSyncDependencies,
+    {
+      [TK in
+        | keyof TAsyncDependencies
+        | TName]: TK extends keyof TAsyncDependencies
+        ? TName extends TK
+          ? TClass
+          : TAsyncDependencies[TK]
+        : TClass
     }
   >
 
@@ -364,6 +409,54 @@ function __createContainer<
           syncDependencies,
           asyncDependencies,
         ) as ContainerWithNewAsyncDep<TName, TDependency>
+      }
+    },
+
+    registerAsyncConstructor<
+      TName extends ContainerKey,
+      TParams extends readonly (
+        | TSyncDependencies[keyof TSyncDependencies]
+        | TAsyncDependencies[keyof TAsyncDependencies]
+      )[],
+      TClass extends TName extends keyof TSyncDependencies
+        ? never
+        : TName extends keyof TAsyncDependencies
+        ? TAsyncDependencies[TName]
+        : unknown,
+      TDependencies extends ContextualParamsToResolverKeys<
+        TSyncDependencies,
+        TAsyncDependencies,
+        TParams
+      >,
+    >(
+      name: TName,
+      constructor: new (...args: TParams) => TClass,
+      ...args: TDependencies
+    ): ContainerWithNewAsyncDep<TName, TClass> {
+      const factory = async (container: typeof this) => {
+        const argPromises = args.map((arg) => {
+          return (arg as string) in syncDependencies
+            ? container.resolve(arg as keyof TSyncDependencies)
+            : container.resolveAsync(arg as keyof TAsyncDependencies)
+        })
+        const resolvedParams = (await Promise.all(
+          argPromises,
+        )) as unknown as TParams
+
+        return new constructor(...resolvedParams)
+      }
+
+      if (name in asyncDependencies) {
+        return __createContainer(syncDependencies, {
+          ...asyncDependencies,
+          [name]: factory,
+        }) as ContainerWithNewAsyncDep<TName, TClass>
+      } else {
+        ;(asyncDependencies as Record<TName, unknown>)[name] = factory
+        return __createContainer(
+          syncDependencies,
+          asyncDependencies,
+        ) as ContainerWithNewAsyncDep<TName, TClass>
       }
     },
 

@@ -119,6 +119,32 @@ describe('container', () => {
     expect(g2).toContain(50)
     expect(g2).toContain(60)
   })
+
+  it('can register constructors with a mix of sync & async dependencies', async () => {
+    class C {
+      constructor(public readonly a: number, public readonly b: string) {}
+    }
+
+    const container = createContainer()
+      .registerValue('numeric', 10)
+      .registerAsync('text', () => Promise.resolve('hello'))
+      .registerAsyncConstructor('C', C, 'numeric', 'text')
+
+    const c1 = await container.resolveAsync('C')
+    expect(c1.a).toBe(10)
+    expect(c1.b).toBe('hello')
+
+    // Re-registering a new dependency with the same name should work, as long
+    // as we preserve its type.
+    const secondContainer = container
+      .registerAsync('float', () => Promise.resolve(34.5))
+      .registerValue('name', 'Bob')
+      .registerAsyncConstructor('C', C, 'float', 'name')
+
+    const c2 = await secondContainer.resolveAsync('C')
+    expect(c2.a).toBe(34.5)
+    expect(c2.b).toBe('Bob')
+  })
 })
 
 // Type tests

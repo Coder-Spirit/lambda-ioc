@@ -1,6 +1,6 @@
 {
   "name": "@coderspirit/lambda-ioc",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/cjs/index.d.ts",
