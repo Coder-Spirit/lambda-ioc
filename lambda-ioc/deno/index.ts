@@ -3,6 +3,7 @@ export {
   type DependencyFactory,
   type ReadableAsyncContainer,
   type ReadableContainer,
+  type ReadableGroupContainer,
   type ReadableSyncContainer,
   type WritableContainer,
   createContainer,

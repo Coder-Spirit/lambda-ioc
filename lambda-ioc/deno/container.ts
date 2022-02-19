@@ -77,7 +77,7 @@ export interface ReadableContainer<
 > extends ReadableSyncContainer<TSyncDependencies>,
     ReadableAsyncContainer<TAsyncDependencies> {}
 
-export interface RedableGroupContainer<
+export interface ReadableGroupContainer<
   TSyncDependencies extends Record<ContainerKey, unknown>,
   TAsyncDependencies extends Record<ContainerKey, unknown>,
 > {
@@ -259,7 +259,7 @@ export interface Container<
   TSyncDependencies extends Record<ContainerKey, unknown>,
   TAsyncDependencies extends Record<ContainerKey, unknown>,
 > extends ReadableContainer<TSyncDependencies, TAsyncDependencies>,
-    RedableGroupContainer<TSyncDependencies, TAsyncDependencies>,
+    ReadableGroupContainer<TSyncDependencies, TAsyncDependencies>,
     WritableContainer<TSyncDependencies, TAsyncDependencies> {}
 
 /**
