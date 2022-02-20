@@ -85,6 +85,14 @@ container.resolveGroup('group2') // ~ [3, 4], not necessarily in the same order
 // up to date. This is useful if we want to use the container as a factory for
 // some of your dependencies.
 const resolvedContainer = container.resolve('$')
+
+// If you want to indirectly resolve the container itself, it can be done only
+// with the methods:
+//   - resolveConstructor
+//   - resolveAsyncConstructor
+// This is because they have "privileged" information about the container's
+// type, while relying on `register` or `registerAsync` plus "combinators" does
+// not allow us to leverage that information.
 ```
 
 It is also possible to register and resolve asynchronous factories and
