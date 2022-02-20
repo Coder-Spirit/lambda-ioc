@@ -1,10 +1,11 @@
 import {
   AsyncDependencyFactory,
+  ContainerKey,
   ReadableContainer,
   ReadableSyncContainer,
   SyncDependencyFactory,
 } from './container.ts';
-import { ContainerKey, ParamsToResolverKeys, TupleO, Zip } from './util.ts';
+import { ParamsToResolverKeys, TupleO, Zip } from './util.ts';
 
 /**
  * Given a dependency factory, returns a new factory that will always resolve

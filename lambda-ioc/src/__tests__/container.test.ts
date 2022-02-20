@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import { Container, createContainer } from '..'
+import { Container, ReadableSyncContainer, createContainer } from '..'
 
 // Behavioural tests
 describe('container', () => {
@@ -7,6 +7,68 @@ describe('container', () => {
     const container = createContainer()
     const resolvedContainer = container.resolve('$')
     expect(resolvedContainer).toBe(container)
+  })
+
+  it('can do indirect self-resolution for registerConstructor', () => {
+    class DependsOnContainer {
+      public readonly theAnswer: number
+
+      // We inject the container itself instead of the "final" resolved value.
+      // Here it makes no sense, but it can be useful when we need to inject
+      // factories.
+      constructor(
+        cc: ReadableSyncContainer<{
+          theAnswerToEverything: number
+        }>,
+      ) {
+        this.theAnswer = cc.resolve('theAnswerToEverything')
+      }
+    }
+
+    const container = createContainer()
+      .registerValue('theAnswerToEverything', 42)
+      .registerConstructor('C', DependsOnContainer, '$')
+      // This 2n part is to check for a type-related regression that appears
+      // when the container has more dependencies that the needed ones.
+      .registerValue('anotherOne', 25)
+      .registerConstructor('C2', DependsOnContainer, '$')
+
+    const dependsOnContainer = container.resolve('C')
+    expect(dependsOnContainer.theAnswer).toBe(42)
+
+    const dependsOnContainer2 = container.resolve('C2')
+    expect(dependsOnContainer2.theAnswer).toBe(42)
+  })
+
+  it('can do indirect self-resolution for registerAsyncConstructor', async () => {
+    class DependsOnContainer {
+      public readonly theAnswer: number
+
+      // We inject the container itself instead of the "final" resolved value.
+      // Here it makes no sense, but it can be useful when we need to inject
+      // factories.
+      constructor(
+        public readonly cc: ReadableSyncContainer<{
+          theAnswerToEverything: number
+        }>,
+      ) {
+        this.theAnswer = cc.resolve('theAnswerToEverything')
+      }
+    }
+
+    const container = createContainer()
+      .registerValue('theAnswerToEverything', 42)
+      .registerAsyncConstructor('C', DependsOnContainer, '$')
+      // This 2n part is to check for a type-related regression that appears
+      // when the container has more dependencies that the needed ones.
+      .registerValue('anotherOne', 25)
+      .registerAsyncConstructor('C2', DependsOnContainer, '$')
+
+    const dependsOnContainer = await container.resolveAsync('C')
+    expect(dependsOnContainer.theAnswer).toBe(42)
+
+    const dependsOnContainer2 = await container.resolveAsync('C2')
+    expect(dependsOnContainer2.theAnswer).toBe(42)
   })
 
   it('can register simple values', () => {
@@ -124,6 +186,32 @@ describe('container', () => {
     expect(g2).toHaveLength(2)
     expect(g2).toContain(50)
     expect(g2).toContain(60)
+  })
+
+  it('can register constructors without having to rely on combinators', () => {
+    class C {
+      constructor(public readonly a: number, public readonly b: string) {}
+    }
+
+    const container = createContainer()
+      .registerValue('numeric', 10)
+      .registerValue('text', 'hello')
+      .registerConstructor('C', C, 'numeric', 'text')
+
+    const c1 = container.resolve('C')
+    expect(c1.a).toBe(10)
+    expect(c1.b).toBe('hello')
+
+    // Re-registering a new dependency with the same name should work, as long
+    // as we preserve its type.
+    const secondContainer = container
+      .registerValue('float', 34.5)
+      .registerValue('name', 'Bob')
+      .registerConstructor('C', C, 'float', 'name')
+
+    const c2 = secondContainer.resolve('C')
+    expect(c2.a).toBe(34.5)
+    expect(c2.b).toBe('Bob')
   })
 
   it('can register constructors with a mix of sync & async dependencies', async () => {

@@ -7,7 +7,7 @@
 [![Known Vulnerabilities](https://snyk.io//test/github/Coder-Spirit/lambda-ioc/badge.svg?targetFile=package.json)](https://snyk.io//test/github/Coder-Spirit/lambda-ioc?targetFile=package.json)
 [![Security Score](https://snyk-widget.herokuapp.com/badge/npm/@coderspirit%2Flambda-ioc/badge.svg)](https://snyk.io/advisor/npm-package/@coderspirit/lambda-ioc)
 
-> Pure functional (λ) dependency injection 💉 for TypeScript (inspired by Diddly)
+> Super type safe dependency injection 💉 for TypeScript (inspired by Diddly)
 
 **NOTE:** This is a "fork" of Tom Sherman's
 **[Diddly library](https://github.com/tom-sherman/diddly)**, who deserves most
@@ -85,6 +85,14 @@ container.resolveGroup('group2') // ~ [3, 4], not necessarily in the same order
 // up to date. This is useful if we want to use the container as a factory for
 // some of your dependencies.
 const resolvedContainer = container.resolve('$')
+
+// If you want to indirectly resolve the container itself, it can be done only
+// with the methods:
+//   - resolveConstructor
+//   - resolveAsyncConstructor
+// This is because they have "privileged" information about the container's
+// type, while relying on `register` or `registerAsync` plus "combinators" does
+// not allow us to leverage that information.
 ```
 
 It is also possible to register and resolve asynchronous factories and

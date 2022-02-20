@@ -1,6 +1,6 @@
 {
   "name": "@coderspirit/lambda-ioc",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/cjs/index.d.ts",
@@ -9,7 +9,7 @@
     "require": "./dist/cjs/index.js",
     "node": "./dist/cjs/index.js"
   },
-  "description": "Pure functional (λ) dependency injection 💉 for TypeScript (inspired by Diddly)",
+  "description": "Super type safe dependency injection 💉 for TypeScript (inspired by Diddly)",
   "keywords": [
     "typescript",
     "functional",

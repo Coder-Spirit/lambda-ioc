@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-types */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-export type ContainerKey = string | symbol
+import { ContainerKey } from './container.ts';
 
 export type Zip<A extends readonly unknown[], B extends readonly unknown[]> = {
   [K in keyof A]: K extends keyof B ? [A[K], B[K]] : never
@@ -10,25 +10,6 @@ export type Zip<A extends readonly unknown[], B extends readonly unknown[]> = {
 export type ParamsToResolverKeys<T extends readonly unknown[] | []> = {
   [K in keyof T]: ContainerKey
 }
-
-export type ContextualParamsToResolverKeys<
-  TSyncDependencies extends Record<ContainerKey, unknown>,
-  TAsyncDependencies extends Record<ContainerKey, unknown>,
-  TParams extends
-    | readonly (
-        | TSyncDependencies[keyof TSyncDependencies]
-        | TAsyncDependencies[keyof TAsyncDependencies]
-      )[]
-    | [],
-> = {
-  [K in keyof TParams]:
-    | KeysMatching<TSyncDependencies, TParams[K]>
-    | KeysMatching<TAsyncDependencies, TParams[K]>
-}
-
-type KeysMatching<Collection, Value> = {
-  [K in keyof Collection]-?: Collection[K] extends Value ? K : never
-}[keyof Collection]
 
 export type MergeNoDuplicates<A extends {}, B extends {}> = {
   [K in keyof A | keyof B]: K extends keyof B
