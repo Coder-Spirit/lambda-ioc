@@ -80,6 +80,11 @@ console.print(person.name) // Prints "Timmy"
 // We can resolve registered "groups"
 container.resolveGroup('group1') // ~ [1, 2], not necessarily in the same order
 container.resolveGroup('group2') // ~ [3, 4], not necessarily in the same order
+
+// We can also resolve the container itself, and the return type will always be
+// up to date. This is useful if we want to use the container as a factory for
+// some of your dependencies.
+const resolvedContainer = container.resolve('$')
 ```
 
 It is also possible to register and resolve asynchronous factories and
@@ -117,6 +122,8 @@ dependencies. If you are curious, just try out:
 - Stricter types for dependencies re-registration.
 - Groups registration and resolution: very useful when we need to resolve all
   dependencies belonging to a same category.
+- Self-resolution. The container is able to resolve itself, to be used as a
+  factory.
 - The container interface has been split into `ReaderContainer` and
   `WriterContainer`, making it easier to use precise types.
 - More extense documentation.
