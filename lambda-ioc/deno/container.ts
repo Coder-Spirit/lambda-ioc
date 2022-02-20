@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
-import { ContainerKey, ContextualParamsToResolverKeys } from './util.ts';
+export type ContainerKey = string | symbol
+type ConstrainedKey = Exclude<ContainerKey, '$' | `$:${string}`>
 
 type ExtractPrefix<S extends ContainerKey> =
   S extends `${infer Prefix}:${string}` ? Prefix : never
@@ -11,7 +12,56 @@ type ExtractPrefixedValues<
   BaseKeys extends keyof Struct = keyof Struct,
 > = BaseKeys extends `${Prefix}:${infer U}` ? Struct[`${Prefix}:${U}`] : never
 
-type ConstrainedKey = Exclude<ContainerKey, '$' | `$:${string}`>
+type KeysMatching<Collection, Value> = {
+  [K in keyof Collection]-?: Collection[K] extends Value ? K : never
+}[keyof Collection]
+
+type ContextualParamsToSyncResolverKeys<
+  TSyncDependencies extends Record<ConstrainedKey, unknown>,
+  TAsyncDependencies extends Record<ConstrainedKey, unknown>,
+  TParams extends
+    | readonly (
+        | TSyncDependencies[keyof TSyncDependencies]
+        | ReadableSyncContainer<Partial<TSyncDependencies>>
+        | ReadableAsyncContainer<Partial<TAsyncDependencies>>
+        | ReadableContainer<
+            Partial<TSyncDependencies>,
+            Partial<TAsyncDependencies>
+          >
+      )[]
+    | [],
+> = {
+  [K in keyof TParams]: TParams[K] extends
+    | ReadableSyncContainer<Partial<TSyncDependencies>>
+    | ReadableAsyncContainer<Partial<TAsyncDependencies>>
+    ? '$'
+    : KeysMatching<TSyncDependencies, TParams[K]>
+}
+
+type ContextualParamsToAsyncResolverKeys<
+  TSyncDependencies extends Record<ConstrainedKey, unknown>,
+  TAsyncDependencies extends Record<ConstrainedKey, unknown>,
+  TParams extends
+    | readonly (
+        | TSyncDependencies[keyof TSyncDependencies]
+        | TAsyncDependencies[keyof TAsyncDependencies]
+        | ReadableSyncContainer<Partial<TSyncDependencies>>
+        | ReadableAsyncContainer<Partial<TAsyncDependencies>>
+        | ReadableContainer<
+            Partial<TSyncDependencies>,
+            Partial<TAsyncDependencies>
+          >
+      )[]
+    | [],
+> = {
+  [K in keyof TParams]: TParams[K] extends
+    | ReadableSyncContainer<Partial<TSyncDependencies>>
+    | ReadableAsyncContainer<Partial<TAsyncDependencies>>
+    ? '$'
+    :
+        | KeysMatching<TSyncDependencies, TParams[K]>
+        | KeysMatching<TAsyncDependencies, TParams[K]>
+}
 
 export interface SyncDependencyFactory<
   T,
@@ -116,7 +166,9 @@ export interface WritableContainer<
   TAsyncDependencies extends Record<ConstrainedKey, unknown>,
 > {
   /**
-   * Register a new synchronous dependency factory.
+   * Registers a new synchronous dependency factory.
+   * It cannot be used when self-resolution is needed. Use
+   * `registerConstructor` instead.
    *
    * @param name The "name" of the dependency (can be a symbol).
    * @param dependency A dependency factory.
@@ -148,7 +200,9 @@ export interface WritableContainer<
   >
 
   /**
-   * Register a new asynchronous dependency factory.
+   * Registers a new asynchronous dependency factory.
+   * It cannot be used when self-resolution is needed. Use
+   * `registerAsyncConstructor` instead.
    *
    * @param name The "name" of the dependency (can be a symbol).
    * @param dependency A dependency factory.
@@ -179,10 +233,49 @@ export interface WritableContainer<
     }
   >
 
+  registerConstructor<
+    TName extends ConstrainedKey,
+    TParams extends readonly (
+      | TSyncDependencies[keyof TSyncDependencies]
+      | ReadableSyncContainer<Partial<TSyncDependencies>>
+      | ReadableAsyncContainer<Partial<TAsyncDependencies>>
+      | ReadableContainer<
+          Partial<TSyncDependencies>,
+          Partial<TAsyncDependencies>
+        >
+    )[],
+    TClass extends TName extends '$' | keyof TAsyncDependencies
+      ? never
+      : TName extends keyof TSyncDependencies
+      ? TSyncDependencies[TName]
+      : unknown,
+    TDependencies extends ContextualParamsToSyncResolverKeys<
+      TSyncDependencies,
+      TAsyncDependencies,
+      TParams
+    >,
+  >(
+    name: TName,
+    constructor: new (...args: TParams) => TClass,
+    ...args: TDependencies
+  ): Container<
+    {
+      [TK in
+        | keyof TSyncDependencies
+        | TName]: TK extends keyof TSyncDependencies
+        ? TName extends TK
+          ? TClass
+          : TSyncDependencies[TK]
+        : TClass
+    },
+    TAsyncDependencies
+  >
+
   /**
    * Registers a new constructor that might have asynchronous-resolvable
    * dependencies. This method is helpful when the constructor combinator is
-   * not powerful enough (as it's only able to resolve synchronously).
+   * not powerful enough (as it's only able to resolve synchronously, and it
+   * cannot take advantage of self-resolution either).
    *
    * @param name The "name" of the dependency (can be a symbol).
    * @param constructor A class constructor, that will be use to resolve the
@@ -196,13 +289,19 @@ export interface WritableContainer<
     TParams extends readonly (
       | TSyncDependencies[keyof TSyncDependencies]
       | TAsyncDependencies[keyof TAsyncDependencies]
+      | ReadableSyncContainer<Partial<TSyncDependencies>>
+      | ReadableAsyncContainer<Partial<TAsyncDependencies>>
+      | ReadableContainer<
+          Partial<TSyncDependencies>,
+          Partial<TAsyncDependencies>
+        >
     )[],
     TClass extends TName extends '$' | keyof TSyncDependencies
       ? never
       : TName extends keyof TAsyncDependencies
       ? TAsyncDependencies[TName]
       : unknown,
-    TDependencies extends ContextualParamsToResolverKeys<
+    TDependencies extends ContextualParamsToAsyncResolverKeys<
       TSyncDependencies,
       TAsyncDependencies,
       TParams
@@ -225,7 +324,7 @@ export interface WritableContainer<
   >
 
   /**
-   * Register an already instantiated dependency.
+   * Registers an already instantiated dependency.
    *
    * @param name The "name" of the dependency (can be a symbol).
    * @param dependency An already instantiated value.
@@ -430,18 +529,77 @@ function __createContainer<
       }
     },
 
+    registerConstructor<
+      TName extends ConstrainedKey,
+      TParams extends readonly (
+        | TSyncDependencies[keyof TSyncDependencies]
+        | ReadableSyncContainer<Partial<TSyncDependencies>>
+        | ReadableAsyncContainer<Partial<TAsyncDependencies>>
+        | ReadableContainer<
+            Partial<TSyncDependencies>,
+            Partial<TAsyncDependencies>
+          >
+      )[],
+      TClass extends TName extends '$' | keyof TAsyncDependencies
+        ? never
+        : TName extends keyof TSyncDependencies
+        ? TSyncDependencies[TName]
+        : unknown,
+      TDependencies extends ContextualParamsToSyncResolverKeys<
+        TSyncDependencies,
+        TAsyncDependencies,
+        TParams
+      >,
+    >(
+      name: TName,
+      constructor: new (...args: TParams) => TClass,
+      ...args: TDependencies
+    ): ContainerWithNewSyncDep<TName, TClass> {
+      const factory = (container: typeof this) => {
+        const resolvedParams = args.map((arg) => {
+          return arg === '$'
+            ? this
+            : container.resolve(arg as keyof TSyncDependencies)
+        }) as unknown as TParams
+
+        return new constructor(...resolvedParams)
+      }
+
+      if (name in syncDependencies) {
+        return __createContainer(
+          {
+            ...syncDependencies,
+            [name]: factory,
+          },
+          asyncDependencies,
+        ) as ContainerWithNewSyncDep<TName, TClass>
+      } else {
+        ;(syncDependencies as Record<TName, unknown>)[name] = factory
+        return __createContainer(
+          syncDependencies,
+          asyncDependencies,
+        ) as ContainerWithNewSyncDep<TName, TClass>
+      }
+    },
+
     registerAsyncConstructor<
       TName extends ConstrainedKey,
       TParams extends readonly (
         | TSyncDependencies[keyof TSyncDependencies]
         | TAsyncDependencies[keyof TAsyncDependencies]
+        | ReadableSyncContainer<Partial<TSyncDependencies>>
+        | ReadableAsyncContainer<Partial<TAsyncDependencies>>
+        | ReadableContainer<
+            Partial<TSyncDependencies>,
+            Partial<TAsyncDependencies>
+          >
       )[],
       TClass extends TName extends '$' | keyof TSyncDependencies
         ? never
         : TName extends keyof TAsyncDependencies
         ? TAsyncDependencies[TName]
         : unknown,
-      TDependencies extends ContextualParamsToResolverKeys<
+      TDependencies extends ContextualParamsToAsyncResolverKeys<
         TSyncDependencies,
         TAsyncDependencies,
         TParams
@@ -453,7 +611,9 @@ function __createContainer<
     ): ContainerWithNewAsyncDep<TName, TClass> {
       const factory = async (container: typeof this) => {
         const argPromises = args.map((arg) => {
-          return (arg as string) in syncDependencies
+          return arg === '$'
+            ? this
+            : (arg as string) in syncDependencies
             ? container.resolve(arg as keyof TSyncDependencies)
             : container.resolveAsync(arg as keyof TAsyncDependencies)
         })
