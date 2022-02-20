@@ -11,9 +11,11 @@ type ExtractPrefixedValues<
   BaseKeys extends keyof Struct = keyof Struct,
 > = BaseKeys extends `${Prefix}:${infer U}` ? Struct[`${Prefix}:${U}`] : never
 
+type ConstrainedKey = Exclude<ContainerKey, '$' | `$:${string}`>
+
 export interface SyncDependencyFactory<
   T,
-  TContainer extends ReadableSyncContainer<Record<ContainerKey, unknown>>,
+  TContainer extends ReadableSyncContainer<Record<ConstrainedKey, unknown>>,
 > {
   (container: TContainer): Awaited<T>
 }
@@ -21,8 +23,8 @@ export interface SyncDependencyFactory<
 export interface AsyncDependencyFactory<
   T,
   TContainer extends ReadableContainer<
-    Record<ContainerKey, unknown>,
-    Record<ContainerKey, unknown>
+    Record<ConstrainedKey, unknown>,
+    Record<ConstrainedKey, unknown>
   >,
 > {
   (container: TContainer): Promise<T>
@@ -35,27 +37,28 @@ export interface AsyncDependencyFactory<
 export interface DependencyFactory<
   T,
   TContainer extends ReadableContainer<
-    Record<ContainerKey, unknown>,
-    Record<ContainerKey, unknown>
+    Record<ConstrainedKey, unknown>,
+    Record<ConstrainedKey, unknown>
   >,
 > extends SyncDependencyFactory<T, TContainer>,
     AsyncDependencyFactory<T, TContainer> {}
 
 export interface ReadableSyncContainer<
-  TSyncDependencies extends Record<ContainerKey, unknown>,
+  TSyncDependencies extends Record<ConstrainedKey, unknown>,
 > {
   /**
    * Resolve a "synchronous" dependency from the container.
    *
    * @param name The "name" of the dependency (can be a symbol).
    */
+  resolve(name: '$'): this
   resolve<TName extends keyof TSyncDependencies>(
     name: TName,
   ): TSyncDependencies[TName]
 }
 
 export interface ReadableAsyncContainer<
-  TAsyncDependencies extends Record<ContainerKey, unknown>,
+  TAsyncDependencies extends Record<ConstrainedKey, unknown>,
 > {
   /**
    * Resolve an "asynchronous" dependency from the container.
@@ -72,33 +75,33 @@ export interface ReadableAsyncContainer<
  * dependencies resolution.
  */
 export interface ReadableContainer<
-  TSyncDependencies extends Record<ContainerKey, unknown>,
-  TAsyncDependencies extends Record<ContainerKey, unknown>,
+  TSyncDependencies extends Record<ConstrainedKey, unknown>,
+  TAsyncDependencies extends Record<ConstrainedKey, unknown>,
 > extends ReadableSyncContainer<TSyncDependencies>,
     ReadableAsyncContainer<TAsyncDependencies> {}
 
 export interface ReadableGroupContainer<
-  TSyncDependencies extends Record<ContainerKey, unknown>,
-  TAsyncDependencies extends Record<ContainerKey, unknown>,
+  TSyncDependencies extends Record<ConstrainedKey, unknown>,
+  TAsyncDependencies extends Record<ConstrainedKey, unknown>,
 > {
   resolveGroup<
-    GroupName extends keyof TSyncDependencies extends ContainerKey
+    GroupName extends keyof TSyncDependencies extends ConstrainedKey
       ? ExtractPrefix<keyof TSyncDependencies>
       : never,
   >(
     groupName: GroupName,
-  ): keyof TSyncDependencies extends ContainerKey
+  ): keyof TSyncDependencies extends ConstrainedKey
     ? ExtractPrefixedValues<GroupName, TSyncDependencies>[]
     : never
 
   resolveGroupAsync<
-    GroupName extends keyof TAsyncDependencies extends ContainerKey
+    GroupName extends keyof TAsyncDependencies extends ConstrainedKey
       ? ExtractPrefix<keyof TAsyncDependencies>
       : never,
   >(
     groupName: GroupName,
   ): Promise<
-    keyof TAsyncDependencies extends ContainerKey
+    keyof TAsyncDependencies extends ConstrainedKey
       ? ExtractPrefixedValues<GroupName, TAsyncDependencies>[]
       : never
   >
@@ -109,8 +112,8 @@ export interface ReadableGroupContainer<
  * "auto-wired" dependencies resolution.
  */
 export interface WritableContainer<
-  TSyncDependencies extends Record<ContainerKey, unknown>,
-  TAsyncDependencies extends Record<ContainerKey, unknown>,
+  TSyncDependencies extends Record<ConstrainedKey, unknown>,
+  TAsyncDependencies extends Record<ConstrainedKey, unknown>,
 > {
   /**
    * Register a new synchronous dependency factory.
@@ -119,10 +122,10 @@ export interface WritableContainer<
    * @param dependency A dependency factory.
    */
   register<
-    TName extends ContainerKey,
+    TName extends ConstrainedKey,
     TDependency extends TName extends keyof TSyncDependencies
       ? TSyncDependencies[TName]
-      : TName extends keyof TAsyncDependencies
+      : TName extends '$' | keyof TAsyncDependencies
       ? never
       : unknown,
   >(
@@ -151,8 +154,8 @@ export interface WritableContainer<
    * @param dependency A dependency factory.
    */
   registerAsync<
-    TName extends ContainerKey,
-    TDependency extends TName extends keyof TSyncDependencies
+    TName extends ConstrainedKey,
+    TDependency extends TName extends '$' | keyof TSyncDependencies
       ? never
       : TName extends keyof TAsyncDependencies
       ? TAsyncDependencies[TName]
@@ -189,12 +192,12 @@ export interface WritableContainer<
    *             resolve the dependency.
    */
   registerAsyncConstructor<
-    TName extends ContainerKey,
+    TName extends ConstrainedKey,
     TParams extends readonly (
       | TSyncDependencies[keyof TSyncDependencies]
       | TAsyncDependencies[keyof TAsyncDependencies]
     )[],
-    TClass extends TName extends keyof TSyncDependencies
+    TClass extends TName extends '$' | keyof TSyncDependencies
       ? never
       : TName extends keyof TAsyncDependencies
       ? TAsyncDependencies[TName]
@@ -228,10 +231,10 @@ export interface WritableContainer<
    * @param dependency An already instantiated value.
    */
   registerValue<
-    TName extends ContainerKey,
+    TName extends ConstrainedKey,
     TDependency extends TName extends keyof TSyncDependencies
       ? TSyncDependencies[TName]
-      : TName extends keyof TAsyncDependencies
+      : TName extends '$' | keyof TAsyncDependencies
       ? never
       : unknown,
   >(
@@ -256,8 +259,8 @@ export interface WritableContainer<
  * resolution
  */
 export interface Container<
-  TSyncDependencies extends Record<ContainerKey, unknown>,
-  TAsyncDependencies extends Record<ContainerKey, unknown>,
+  TSyncDependencies extends Record<ConstrainedKey, unknown>,
+  TAsyncDependencies extends Record<ConstrainedKey, unknown>,
 > extends ReadableContainer<TSyncDependencies, TAsyncDependencies>,
     ReadableGroupContainer<TSyncDependencies, TAsyncDependencies>,
     WritableContainer<TSyncDependencies, TAsyncDependencies> {}
@@ -274,15 +277,18 @@ export function createContainer(): Container<{}, {}> {
 // -----------------------------------------------------------------------------
 type SyncFactoriesToValues<
   TDependencyFactories extends Record<
-    ContainerKey,
-    SyncDependencyFactory<unknown, Container<Record<ContainerKey, unknown>, {}>>
+    ConstrainedKey,
+    SyncDependencyFactory<
+      unknown,
+      Container<Record<ConstrainedKey, unknown>, {}>
+    >
   >,
 > = {} extends TDependencyFactories
   ? {}
   : {
       [name in keyof TDependencyFactories]: TDependencyFactories[name] extends SyncDependencyFactory<
         infer T,
-        Container<Record<ContainerKey, unknown>, {}>
+        Container<Record<ConstrainedKey, unknown>, {}>
       >
         ? T
         : never
@@ -290,10 +296,13 @@ type SyncFactoriesToValues<
 
 type AsyncFactoriesToValues<
   TDependencyFactories extends Record<
-    ContainerKey,
+    ConstrainedKey,
     AsyncDependencyFactory<
       unknown,
-      Container<Record<ContainerKey, unknown>, Record<ContainerKey, unknown>>
+      Container<
+        Record<ConstrainedKey, unknown>,
+        Record<ConstrainedKey, unknown>
+      >
     >
   >,
 > = {} extends TDependencyFactories
@@ -301,7 +310,10 @@ type AsyncFactoriesToValues<
   : {
       [name in keyof TDependencyFactories]: TDependencyFactories[name] extends AsyncDependencyFactory<
         infer T,
-        Container<Record<ContainerKey, unknown>, Record<ContainerKey, unknown>>
+        Container<
+          Record<ConstrainedKey, unknown>,
+          Record<ConstrainedKey, unknown>
+        >
       >
         ? Awaited<T>
         : never
@@ -312,17 +324,23 @@ type AsyncFactoriesToValues<
 // -----------------------------------------------------------------------------
 function __createContainer<
   TSyncDependencyFactories extends Record<
-    ContainerKey,
+    ConstrainedKey,
     SyncDependencyFactory<
       unknown,
-      Container<Record<ContainerKey, unknown>, Record<ContainerKey, unknown>>
+      Container<
+        Record<ConstrainedKey, unknown>,
+        Record<ConstrainedKey, unknown>
+      >
     >
   >,
   TAsyncDependencyFactories extends Record<
-    ContainerKey,
+    ConstrainedKey,
     AsyncDependencyFactory<
       unknown,
-      Container<Record<ContainerKey, unknown>, Record<ContainerKey, unknown>>
+      Container<
+        Record<ConstrainedKey, unknown>,
+        Record<ConstrainedKey, unknown>
+      >
     >
   >,
 >(
@@ -336,7 +354,7 @@ function __createContainer<
   type TSyncDependencies = SyncFactoriesToValues<TSyncDependencyFactories>
   type TAsyncDependencies = AsyncFactoriesToValues<TAsyncDependencyFactories>
   type ContainerWithNewSyncDep<
-    TName extends ContainerKey,
+    TName extends ConstrainedKey,
     TDependency,
   > = Container<
     {
@@ -351,7 +369,7 @@ function __createContainer<
     AsyncFactoriesToValues<TAsyncDependencyFactories>
   >
   type ContainerWithNewAsyncDep<
-    TName extends ContainerKey,
+    TName extends ConstrainedKey,
     TDependency,
   > = Container<
     SyncFactoriesToValues<TSyncDependencyFactories>,
@@ -367,7 +385,7 @@ function __createContainer<
   >
 
   return {
-    register<TName extends ContainerKey, TDependency>(
+    register<TName extends ConstrainedKey, TDependency>(
       name: TName,
       dependency: SyncDependencyFactory<
         TDependency,
@@ -391,7 +409,7 @@ function __createContainer<
       }
     },
 
-    registerAsync<TName extends ContainerKey, TDependency>(
+    registerAsync<TName extends ConstrainedKey, TDependency>(
       name: TName,
       dependency: AsyncDependencyFactory<
         TDependency,
@@ -413,12 +431,12 @@ function __createContainer<
     },
 
     registerAsyncConstructor<
-      TName extends ContainerKey,
+      TName extends ConstrainedKey,
       TParams extends readonly (
         | TSyncDependencies[keyof TSyncDependencies]
         | TAsyncDependencies[keyof TAsyncDependencies]
       )[],
-      TClass extends TName extends keyof TSyncDependencies
+      TClass extends TName extends '$' | keyof TSyncDependencies
         ? never
         : TName extends keyof TAsyncDependencies
         ? TAsyncDependencies[TName]
@@ -460,7 +478,7 @@ function __createContainer<
       }
     },
 
-    registerValue<TName extends ContainerKey, TDependency>(
+    registerValue<TName extends ConstrainedKey, TDependency>(
       name: TName,
       dependency: TDependency,
     ): ContainerWithNewSyncDep<TName, TDependency> {
@@ -481,14 +499,19 @@ function __createContainer<
       }
     },
 
-    resolve<TName extends keyof TSyncDependencies>(
+    resolve<TName extends '$' | keyof TSyncDependencies>(
       name: TName,
     ): TSyncDependencies[TName] {
-      return (
-        syncDependencies[
-          name as keyof TSyncDependencyFactories
-        ] as SyncDependencyFactory<TSyncDependencies[TName], typeof this>
-      )(this)
+      // We have to cast `this` because there's no easy way to "translate" the
+      // function overload that we have in the interface declaration to this
+      // function definition.
+      return name === '$'
+        ? (this as TSyncDependencies[TName])
+        : (
+            syncDependencies[
+              name as keyof TSyncDependencyFactories
+            ] as SyncDependencyFactory<TSyncDependencies[TName], typeof this>
+          )(this)
     },
 
     async resolveAsync<TName extends keyof TAsyncDependencies>(
@@ -503,7 +526,7 @@ function __createContainer<
 
     resolveGroup<GroupName extends string>(
       groupName: GroupName,
-    ): keyof TSyncDependencies extends ContainerKey
+    ): keyof TSyncDependencies extends ConstrainedKey
       ? ExtractPrefixedValues<GroupName, TSyncDependencies>[]
       : never {
       return (
@@ -514,7 +537,7 @@ function __createContainer<
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           .map(([_key, value]) => {
             return value(this)
-          }) as keyof TSyncDependencies extends ContainerKey
+          }) as keyof TSyncDependencies extends ConstrainedKey
           ? ExtractPrefixedValues<GroupName, TSyncDependencies>[]
           : never
       )
@@ -523,7 +546,7 @@ function __createContainer<
     async resolveGroupAsync<GroupName extends string>(
       groupName: GroupName,
     ): Promise<
-      keyof TAsyncDependencies extends ContainerKey
+      keyof TAsyncDependencies extends ConstrainedKey
         ? ExtractPrefixedValues<GroupName, TAsyncDependencies>[]
         : never
     > {
@@ -536,7 +559,7 @@ function __createContainer<
           .map(([_key, value]) => {
             return value(this)
           }),
-      )) as keyof TAsyncDependencies extends ContainerKey
+      )) as keyof TAsyncDependencies extends ConstrainedKey
         ? ExtractPrefixedValues<GroupName, TAsyncDependencies>[]
         : never
     },

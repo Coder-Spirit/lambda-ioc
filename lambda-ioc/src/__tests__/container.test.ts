@@ -3,6 +3,12 @@ import { Container, createContainer } from '..'
 
 // Behavioural tests
 describe('container', () => {
+  it('resolves itself with $ as key', () => {
+    const container = createContainer()
+    const resolvedContainer = container.resolve('$')
+    expect(resolvedContainer).toBe(container)
+  })
+
   it('can register simple values', () => {
     const container = createContainer()
       .registerValue('foo', 'bar')
@@ -364,5 +370,39 @@ describe('@types/container', () => {
     const c_can_only_resolveGroupAsync_g1g2: C_resolveGroupAsync_Parameters_is_g1g2 =
       true
     expect(c_can_only_resolveGroupAsync_g1g2).toBe(true)
+  })
+
+  it('has the correct type for self-resolution', () => {
+    const c1 = createContainer()
+    const c2 = c1.registerValue('a', 1)
+    const rc1 = c1.resolve('$')
+    const rc2 = c2.resolve('$')
+
+    type C1 = typeof c1
+    type C2 = typeof c2
+    type RC1 = typeof rc1
+    type RC2 = typeof rc2
+
+    type C1_extends_RC1 = C1 extends RC1 ? true : false
+    type RC1_extends_C1 = RC1 extends C1 ? true : false
+    type C1_is_RC1 = C1_extends_RC1 extends true
+      ? RC1_extends_C1 extends true
+        ? true
+        : false
+      : false
+
+    type C2_extends_RC2 = C2 extends RC2 ? true : false
+    type RC2_extends_C2 = RC2 extends C2 ? true : false
+    type C2_is_RC2 = C2_extends_RC2 extends true
+      ? RC2_extends_C2 extends true
+        ? true
+        : false
+      : false
+
+    const c1_is_rc1: C1_is_RC1 = true
+    const c2_is_rc2: C2_is_RC2 = true
+
+    expect(c1_is_rc1).toBe(true)
+    expect(c2_is_rc2).toBe(true)
   })
 })
