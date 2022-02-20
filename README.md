@@ -88,8 +88,8 @@ const resolvedContainer = container.resolve('$')
 
 // If you want to indirectly resolve the container itself, it can be done only
 // with the methods:
-//   - resolveConstructor
-//   - resolveAsyncConstructor
+//   - registerConstructor
+//   - registerAsyncConstructor
 // This is because they have "privileged" information about the container's
 // type, while relying on `register` or `registerAsync` plus "combinators" does
 // not allow us to leverage that information.
