@@ -7,7 +7,7 @@
 [![Known Vulnerabilities](https://snyk.io//test/github/Coder-Spirit/lambda-ioc/badge.svg?targetFile=package.json)](https://snyk.io//test/github/Coder-Spirit/lambda-ioc?targetFile=package.json)
 [![Security Score](https://snyk-widget.herokuapp.com/badge/npm/@coderspirit%2Flambda-ioc/badge.svg)](https://snyk.io/advisor/npm-package/@coderspirit/lambda-ioc)
 
-> Pure functional (λ) dependency injection 💉 for TypeScript (inspired by Diddly)
+> Super type safe dependency injection 💉 for TypeScript (inspired by Diddly)
 
 **NOTE:** This is a "fork" of Tom Sherman's
 **[Diddly library](https://github.com/tom-sherman/diddly)**, who deserves most

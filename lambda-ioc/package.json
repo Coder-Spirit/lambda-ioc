@@ -9,7 +9,7 @@
     "require": "./dist/cjs/index.js",
     "node": "./dist/cjs/index.js"
   },
-  "description": "Pure functional (λ) dependency injection 💉 for TypeScript (inspired by Diddly)",
+  "description": "Super type safe dependency injection 💉 for TypeScript (inspired by Diddly)",
   "keywords": [
     "typescript",
     "functional",
