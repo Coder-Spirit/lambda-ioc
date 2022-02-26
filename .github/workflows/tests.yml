@@ -26,7 +26,7 @@ jobs:
       uses: actions/setup-node@v2
       with:
         node-version: ${{ matrix.node-version }}
-    - run: npm install -g yarn
+    - run: if [ "$(node --version)" \< "v17" ]; then npm install -g yarn; fi
     - run: yarn install
     - run: yarn test
     - run: yarn lint
