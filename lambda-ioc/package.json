@@ -1,6 +1,6 @@
 {
   "name": "@coderspirit/lambda-ioc",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/cjs/index.d.ts",
@@ -38,11 +38,11 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@types/jest": "^27.4.0",
+    "@types/jest": "^27.4.1",
     "@types/node": "^14.14.37",
-    "@typescript-eslint/eslint-plugin": "^5.12.0",
-    "@typescript-eslint/parser": "^5.12.0",
-    "eslint": "^8.9.0",
+    "@typescript-eslint/eslint-plugin": "^5.12.1",
+    "@typescript-eslint/parser": "^5.12.1",
+    "eslint": "^8.10.0",
     "eslint-config-prettier": "^8.4.0",
     "eslint-plugin-jest": "^26.1.1",
     "eslint-plugin-node": "^11.1.0",
