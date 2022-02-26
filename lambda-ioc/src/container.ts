@@ -20,7 +20,7 @@ type ContextualParamsToSyncResolverKeys<
   TSyncDependencies extends Record<ConstrainedKey, unknown>,
   TAsyncDependencies extends Record<ConstrainedKey, unknown>,
   TParams extends
-    | readonly (
+    | (
         | TSyncDependencies[keyof TSyncDependencies]
         | ReadableSyncContainer<Partial<TSyncDependencies>>
         | ReadableAsyncContainer<Partial<TAsyncDependencies>>
@@ -42,7 +42,7 @@ type ContextualParamsToAsyncResolverKeys<
   TSyncDependencies extends Record<ConstrainedKey, unknown>,
   TAsyncDependencies extends Record<ConstrainedKey, unknown>,
   TParams extends
-    | readonly (
+    | (
         | TSyncDependencies[keyof TSyncDependencies]
         | TAsyncDependencies[keyof TAsyncDependencies]
         | ReadableSyncContainer<Partial<TSyncDependencies>>
@@ -235,7 +235,7 @@ export interface WritableContainer<
 
   registerConstructor<
     TName extends ConstrainedKey,
-    TParams extends readonly (
+    TParams extends (
       | TSyncDependencies[keyof TSyncDependencies]
       | ReadableSyncContainer<Partial<TSyncDependencies>>
       | ReadableAsyncContainer<Partial<TAsyncDependencies>>
@@ -286,7 +286,7 @@ export interface WritableContainer<
    */
   registerAsyncConstructor<
     TName extends ConstrainedKey,
-    TParams extends readonly (
+    TParams extends (
       | TSyncDependencies[keyof TSyncDependencies]
       | TAsyncDependencies[keyof TAsyncDependencies]
       | ReadableSyncContainer<Partial<TSyncDependencies>>
@@ -531,7 +531,7 @@ function __createContainer<
 
     registerConstructor<
       TName extends ConstrainedKey,
-      TParams extends readonly (
+      TParams extends (
         | TSyncDependencies[keyof TSyncDependencies]
         | ReadableSyncContainer<Partial<TSyncDependencies>>
         | ReadableAsyncContainer<Partial<TAsyncDependencies>>
@@ -584,7 +584,7 @@ function __createContainer<
 
     registerAsyncConstructor<
       TName extends ConstrainedKey,
-      TParams extends readonly (
+      TParams extends (
         | TSyncDependencies[keyof TSyncDependencies]
         | TAsyncDependencies[keyof TAsyncDependencies]
         | ReadableSyncContainer<Partial<TSyncDependencies>>
