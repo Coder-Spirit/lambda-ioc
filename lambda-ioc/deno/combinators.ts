@@ -87,32 +87,6 @@ export function func<
   }
 }
 
-/**
- * Given a class constructor, and a list of named dependencies, creates a new
- * dependency factory that will resolve a new instance of the class.
- */
-export function constructor<
-  TParams extends readonly unknown[],
-  TClass,
-  TDependencies extends ParamsToResolverKeys<TParams>,
->(
-  constructor: new (...args: TParams) => Awaited<TClass>,
-  ...args: TDependencies
-): SyncDependencyFactory<TClass, SyncFuncContainer<TParams, TDependencies>> {
-  return (container: SyncFuncContainer<TParams, TDependencies>) => {
-    const resolvedArgs = args.map((arg) =>
-      container.resolve(
-        // This is ugly as hell, but I did not want to apply ts-ignore
-        arg as Parameters<
-          SyncFuncContainer<TParams, TDependencies>['resolve']
-        >[0],
-      ),
-    ) as unknown as TParams
-
-    return new constructor(...resolvedArgs)
-  }
-}
-
 // Class-Constructor to Interface-Constructor
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function cc2ic<I>(): <CC extends new (...args: any[]) => I>(cc: CC) => AsInterfaceCtor<I, CC> {

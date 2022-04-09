@@ -38,7 +38,6 @@ import { ... } from 'https://deno.land/x/lambda_ioc@[VERSION]/lambda-ioc/deno/in
 ```ts
 import {
   cc2ic, // Stands for "class-constructor to interface-constructor"
-  constructor,
   createContainer,
   func
 } from '@coderspirit/lambda-ioc'
@@ -64,10 +63,8 @@ const container = createContainer()
   .registerValue('someName', 'Timmy')
   // We can register functions
   .register('fn', func(printNameAndAge, 'someName', 'someAge'))
-  // And constructors too
-  .register('Person', constructor(Person, 'someAge', 'someName'))
-  // We can do that directly, without having import `constructor`:
-  .registerConstructor('AnotherPerson', Person, 'someAge', 'someName')
+  // And constructors too:
+  .registerConstructor('Person', Person, 'someAge', 'someName')
   // In case we want to register a "concrete" constructor to provide an
   // abstract interface, we'll have to apply a small hack, using `cc2ic`:
   .registerConstructor('Human', cc2ic<Human>()(Person), 'someAge', 'someName')
@@ -96,14 +93,6 @@ container.resolveGroup('group2') // ~ [3, 4], not necessarily in the same order
 // up to date. This is useful if we want to use the container as a factory for
 // some of your dependencies.
 const resolvedContainer = container.resolve('$')
-
-// If you want to indirectly resolve the container itself, it can be done only
-// with the methods:
-//   - registerConstructor
-//   - registerAsyncConstructor
-// This is because they have "privileged" information about the container's
-// type, while relying on `register` or `registerAsync` plus "combinators" does
-// not allow us to leverage that information.
 ```
 
 It is also possible to register and resolve asynchronous factories and
