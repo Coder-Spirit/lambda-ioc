@@ -37,6 +37,7 @@ import { ... } from 'https://deno.land/x/lambda_ioc@[VERSION]/lambda-ioc/deno/in
 
 ```ts
 import {
+  cc2ic, // Stands for "class-constructor to interface-constructor"
   constructor,
   createContainer,
   func
@@ -46,7 +47,12 @@ function printNameAndAge(name: string, age: number) {
   console.log(`${name} is aged ${age}`)
 }
 
-class Person {
+interface Human {
+  age: number
+  name: readonly string
+}
+
+class Person implements Human {
   constructor(
     public readonly age: number,
     public readonly name: string
@@ -60,6 +66,11 @@ const container = createContainer()
   .register('fn', func(printNameAndAge, 'someName', 'someAge'))
   // And constructors too
   .register('Person', constructor(Person, 'someAge', 'someName'))
+  // We can do that directly, without having import `constructor`:
+  .registerConstructor('AnotherPerson', Person, 'someAge', 'someName')
+  // In case we want to register a "concrete" constructor to provide an
+  // abstract interface, we'll have to apply a small hack, using `cc2ic`:
+  .registerConstructor('Human', cc2ic<Human>()(Person), 'someAge', 'someName')
   // We can "define groups" by using `:` as an infix, the group's name will be
   // the first part of the string before `:`.
   // Groups can be used in all "register" methods.

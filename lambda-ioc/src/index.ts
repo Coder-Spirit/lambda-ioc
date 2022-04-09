@@ -8,4 +8,10 @@ export {
   type WritableContainer,
   createContainer,
 } from './container'
-export { asyncSingleton, constructor, func, singleton } from './combinators'
+export {
+  asyncSingleton,
+  cc2ic,
+  constructor,
+  func,
+  singleton,
+} from './combinators'
