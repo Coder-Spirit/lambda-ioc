@@ -113,6 +113,15 @@ export function constructor<
   }
 }
 
+// Class-Constructor to Interface-Constructor
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function cc2ic<I>(): <CC extends new (...args: any[]) => I>(cc: CC) => AsInterfaceCtor<I, CC> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return identity as <C extends I, CC extends new (...args: any[]) => C>(
+    cc: CC,
+  ) => AsInterfaceCtor<I, CC>
+}
+
 // -----------------------------------------------------------------------------
 // Private Types
 // -----------------------------------------------------------------------------
@@ -125,3 +134,22 @@ type SyncFuncContainer<
     Extract<Zip<TSyncDependencies, TParams>, readonly [ContainerKey, any][]>
   >
 >
+
+// Converts a "class constructor" type to an "interface constructor" type
+type AsInterfaceCtor<
+  I, // The interface we are interested on
+  // We have to pass CC to know its constructor parameters
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  CC extends new (...args: any[]) => I = new () => I,
+> = CC extends new (...args: infer A) => infer C
+  ? C extends I
+    ? new (...args: A) => I
+    : never
+  : never
+
+// -----------------------------------------------------------------------------
+// Private Functions
+// -----------------------------------------------------------------------------
+
+// Helper function, here to avoid creating too many anonymous lambdas
+const identity = (x: unknown) => x
