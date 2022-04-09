@@ -11,7 +11,6 @@ export {
 export {
   asyncSingleton,
   cc2ic,
-  constructor,
   func,
   singleton,
 } from './combinators'
