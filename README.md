@@ -1,3 +1,6 @@
+> [!WARNING]
+> The development of this package has been moved to https://github.com/Coder-Spirit/nominal/
+
 # @coderspirit/lambda-ioc
 
 [![NPM version](https://img.shields.io/npm/v/@coderspirit/lambda-ioc.svg?style=flat)](https://www.npmjs.com/package/@coderspirit/lambda-ioc)
